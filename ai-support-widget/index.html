@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Support Assistant — embeddable widget demo</title>
+<meta name="description" content="A drop-in AI support widget that answers customer questions from your own docs. OpenAI-compatible — connect any LLM. Live demo.">
+<style>
+  :root{
+    --bg:#F6F7FB; --panel:#FFFFFF; --panel-2:#F1F2F8;
+    --ink:#191B2E; --muted:#63667E; --border:#E4E5F0;
+    --brand:#5B57E0; --brand-ink:#4844C4; --brand-soft:#ECEBFB;
+    --user:#5B57E0; --bot:#F1F2F8;
+    --ok:#1B9E6B;
+    --shadow:0 1px 2px rgba(25,27,46,.05),0 18px 44px rgba(25,27,46,.13);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0F1018; --panel:#181A26; --panel-2:#20222F;
+      --ink:#EBECF5; --muted:#9A9DB5; --border:#2A2C3B;
+      --brand:#8481FF; --brand-ink:#9C99FF; --brand-soft:#1E1F3A;
+      --user:#6C68EE; --bot:#20222F;
+      --ok:#43C88C;
+      --shadow:0 1px 2px rgba(0,0,0,.35),0 20px 50px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F1018; --panel:#181A26; --panel-2:#20222F;
+    --ink:#EBECF5; --muted:#9A9DB5; --border:#2A2C3B;
+    --brand:#8481FF; --brand-ink:#9C99FF; --brand-soft:#1E1F3A;
+    --user:#6C68EE; --bot:#20222F; --ok:#43C88C;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 20px 50px rgba(0,0,0,.5);
+  }
+  :root[data-theme="light"]{
+    --bg:#F6F7FB; --panel:#FFFFFF; --panel-2:#F1F2F8;
+    --ink:#191B2E; --muted:#63667E; --border:#E4E5F0;
+    --brand:#5B57E0; --brand-ink:#4844C4; --brand-soft:#ECEBFB;
+    --user:#5B57E0; --bot:#F1F2F8; --ok:#1B9E6B;
+    --shadow:0 1px 2px rgba(25,27,46,.05),0 18px 44px rgba(25,27,46,.13);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased}
+
+  /* ---- portfolio framing header ---- */
+  .demo-note{
+    max-width:900px;margin:0 auto;padding:clamp(24px,5vw,56px) clamp(16px,4vw,24px) 8px;
+  }
+  .tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-ink);background:var(--brand-soft);padding:5px 11px;border-radius:999px}
+  h1{font-size:clamp(27px,5vw,40px);line-height:1.1;letter-spacing:-.025em;margin:16px 0 12px;text-wrap:balance;font-weight:800}
+  .demo-note p{color:var(--muted);font-size:clamp(15px,2.3vw,17px);max-width:64ch;margin:0 0 8px}
+  .demo-note .cue{color:var(--brand-ink);font-weight:600}
+
+  /* ---- fake product context so the widget is shown in situ ---- */
+  .stage{
+    max-width:900px;margin:24px auto 0;padding:0 clamp(16px,4vw,24px) 120px;position:relative;
+  }
+  .mock{
+    border:1px solid var(--border);border-radius:18px;background:
+      linear-gradient(180deg,color-mix(in srgb,var(--brand) 5%,var(--panel)),var(--panel));
+    padding:clamp(24px,4vw,44px);box-shadow:var(--shadow);overflow:hidden;position:relative;
+  }
+  .mock .kick{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .mock h2{font-size:clamp(22px,3.6vw,30px);letter-spacing:-.02em;margin:10px 0 10px;text-wrap:balance}
+  .mock p{color:var(--muted);max-width:52ch;margin:0 0 22px}
+  .mrow{display:flex;gap:20px;flex-wrap:wrap}
+  .mcard{flex:1 1 150px;background:var(--panel-2);border:1px solid var(--border);border-radius:12px;padding:16px}
+  .mcard .n{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:-.02em}
+  .mcard .l{font-size:12px;color:var(--muted);margin-top:4px}
+  .mhint{margin-top:26px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .mhint b{color:var(--ink)}
+  .arrow{animation:bob 1.6s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateX(4px)}}
+
+  /* ---- chat launcher ---- */
+  .launcher{
+    position:fixed;right:clamp(16px,4vw,28px);bottom:clamp(16px,4vw,28px);z-index:40;
+    width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;background:var(--brand);
+    box-shadow:0 10px 26px color-mix(in srgb,var(--brand) 45%,transparent);
+    display:grid;place-items:center;transition:transform .18s,box-shadow .18s;
+  }
+  .launcher:hover{transform:translateY(-2px) scale(1.04)}
+  .launcher svg{width:26px;height:26px}
+  .launcher .close-i{display:none}
+  .launcher[aria-expanded="true"] .open-i{display:none}
+  .launcher[aria-expanded="true"] .close-i{display:block}
+
+  /* ---- chat panel ---- */
+  .chat{
+    position:fixed;right:clamp(16px,4vw,28px);bottom:calc(clamp(16px,4vw,28px) + 72px);z-index:41;
+    width:min(390px,calc(100vw - 32px));height:min(600px,calc(100vh - 120px));
+    background:var(--panel);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);
+    display:flex;flex-direction:column;overflow:hidden;
+    transform-origin:bottom right;opacity:0;transform:translateY(12px) scale(.96);pointer-events:none;
+    transition:opacity .2s,transform .2s;
+  }
+  .chat.open{opacity:1;transform:none;pointer-events:auto}
+  .chead{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border);background:var(--panel)}
+  .avatar{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--brand),color-mix(in srgb,var(--brand) 60%,#000));display:grid;place-items:center;flex:none}
+  .avatar svg{width:20px;height:20px}
+  .chead .who{font-weight:700;font-size:15px;line-height:1.2}
+  .chead .stat{font-size:12px;color:var(--ok);display:flex;align-items:center;gap:5px}
+  .chead .stat::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  .chead .thm{margin-left:auto;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:16px;padding:6px}
+
+  .msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+  .msg{max-width:84%;padding:11px 14px;border-radius:15px;font-size:14px;line-height:1.5;word-wrap:break-word}
+  .msg.bot{align-self:flex-start;background:var(--bot);border-bottom-left-radius:5px}
+  .msg.user{align-self:flex-end;background:var(--user);color:#fff;border-bottom-right-radius:5px}
+  .msg.bot a{color:var(--brand-ink);font-weight:600}
+  .msg .src{display:block;margin-top:7px;font-size:11px;color:var(--muted)}
+  .typing{align-self:flex-start;background:var(--bot);padding:13px 15px;border-radius:15px;border-bottom-left-radius:5px;display:flex;gap:4px}
+  .typing span{width:7px;height:7px;border-radius:50%;background:var(--muted);opacity:.5;animation:blink 1.2s infinite}
+  .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px;padding:0 18px 12px}
+  .chips button{font:inherit;font-size:12.5px;cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--brand-ink);padding:7px 12px;border-radius:999px;transition:.15s}
+  .chips button:hover{background:var(--brand-soft);border-color:var(--brand)}
+
+  .cinput{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);background:var(--panel)}
+  .cinput input{flex:1;border:1px solid var(--border);background:var(--panel-2);color:var(--ink);border-radius:11px;padding:11px 13px;font:inherit;font-size:14px}
+  .cinput input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 20%,transparent)}
+  .cinput button{border:0;background:var(--brand);color:#fff;border-radius:11px;width:44px;cursor:pointer;display:grid;place-items:center;flex:none}
+  .cinput button:hover{filter:brightness(1.06)}
+  .cinput button svg{width:18px;height:18px}
+  .powered{text-align:center;font-size:11px;color:var(--muted);padding:0 0 10px}
+  .powered code{font-family:var(--mono);font-size:10.5px}
+
+  :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+  <div class="demo-note">
+    <span class="tag">Portfolio demo · AI integration</span>
+    <h1>A support assistant that answers from your own docs</h1>
+    <p>Drop-in chat widget for any website. It answers customers from a knowledge base you control, cites its source, and hands off when it isn't sure. Built on the OpenAI-compatible chat API — point it at OpenAI, Anthropic, or a cheaper endpoint, no rewrite.</p>
+    <p class="cue">This page is a mock SaaS site — click the purple button, bottom-right, to talk to the assistant. →</p>
+  </div>
+
+  <div class="stage">
+    <div class="mock">
+      <div class="kick">Northwind Analytics · demo product</div>
+      <h2>Dashboards your whole team actually reads</h2>
+      <p>Connect your data, ship a dashboard in minutes, and let the numbers explain themselves. This is a stand-in product so the support assistant has something to answer about.</p>
+      <div class="mrow">
+        <div class="mcard"><div class="n">14 days</div><div class="l">free trial</div></div>
+        <div class="mcard"><div class="n">$29/mo</div><div class="l">Starter plan</div></div>
+        <div class="mcard"><div class="n">40+</div><div class="l">data sources</div></div>
+      </div>
+      <div class="mhint"><span class="arrow">👉</span> Try asking the assistant: <b>“how much is it?”</b> or <b>“can I export to CSV?”</b></div>
+    </div>
+  </div>
+
+  <!-- widget -->
+  <button class="launcher" id="launcher" aria-expanded="false" aria-label="Open support chat">
+    <svg class="open-i" viewBox="0 0 24 24" fill="none"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H9l-4.2 3.5A.6.6 0 0 1 4 19V5.5Z" fill="#fff"/></svg>
+    <svg class="close-i" viewBox="0 0 24 24" fill="none"><path d="m6 6 12 12M18 6 6 18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+  </button>
+
+  <section class="chat" id="chat" aria-label="Support chat">
+    <div class="chead">
+      <div class="avatar"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2a5 5 0 0 1 5 5v1a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5Z" fill="#fff" opacity=".9"/><path d="M4 21a8 8 0 0 1 16 0" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div>
+        <div class="who">Northwind Assistant</div>
+        <div class="stat">Online · replies instantly</div>
+      </div>
+      <button class="thm" id="thm" aria-label="Toggle theme">◐</button>
+    </div>
+    <div class="msgs" id="msgs" aria-live="polite"></div>
+    <div class="chips" id="chips"></div>
+    <form class="cinput" id="form">
+      <input id="input" placeholder="Ask about Northwind…" autocomplete="off" aria-label="Message">
+      <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12 20 4l-6 16-3-7-7-1Z" fill="#fff"/></svg></button>
+    </form>
+    <div class="powered">Demo mode · answers from a local KB. Live: swap in <code>baseURL + apiKey</code>.</div>
+  </section>
+
+<script>
+(function(){
+  "use strict";
+  // ---------------------------------------------------------------------------
+  // DEMO KNOWLEDGE BASE. In production this is your docs, embedded + retrieved,
+  // and the reply is generated by an LLM over the retrieved chunks. Here we do
+  // lightweight keyword retrieval + templated answers so the demo runs with zero
+  // backend and zero API key — but the UX (retrieval → grounded answer → source
+  // citation → human handoff) is exactly the real thing.
+  // ---------------------------------------------------------------------------
+  var KB=[
+    {k:["price","cost","how much","pricing","plan","$"],
+     a:"Northwind has three plans: <b>Starter $29/mo</b>, <b>Team $99/mo</b>, and custom <b>Enterprise</b>. Every plan starts with a 14-day free trial — no card required.",src:"Pricing page"},
+    {k:["trial","free","try"],
+     a:"You get a <b>14-day free trial</b> on any plan, with no credit card up front. You can switch plans or cancel anytime during the trial.",src:"Getting started › Trials"},
+    {k:["export","csv","download","excel"],
+     a:"Yes — any dashboard or table can be exported to <b>CSV or Excel</b> from the ••• menu, and you can schedule recurring exports by email on Team and up.",src:"Docs › Exporting data"},
+    {k:["data source","connect","integration","database","postgres","source"],
+     a:"Northwind connects to <b>40+ sources</b> — Postgres, MySQL, BigQuery, Snowflake, Stripe, Google Sheets and more. Most connect in under a minute with a read-only key.",src:"Docs › Data sources"},
+    {k:["cancel","refund","money back"],
+     a:"You can cancel anytime from Settings › Billing — no lock-in. If you cancel within 30 days of a paid charge, support will issue a full refund.",src:"Billing › Cancellation"},
+    {k:["security","gdpr","soc","privacy","encrypt"],
+     a:"Data is encrypted in transit and at rest, connections are read-only, and Northwind is <b>SOC 2 Type II</b> and GDPR compliant.",src:"Trust & security"},
+    {k:["api","webhook","developer"],
+     a:"There's a full REST API and webhooks on Team and Enterprise. You can pull any metric programmatically or push dashboard events to your own systems.",src:"Docs › API"},
+    {k:["team","seat","user","invite","collaborat"],
+     a:"Invite unlimited viewers on every plan; editor seats are 3 on Starter, 10 on Team, and custom on Enterprise. Invites are under Settings › Members.",src:"Docs › Team & roles"}
+  ];
+  var GREET="👋 Hi! I'm the Northwind assistant. I can answer questions about pricing, data sources, exporting, security and more. What can I help with?";
+  var FALLBACK="I'm not fully sure on that one, so I don't want to guess. I can connect you with a human — want me to open a ticket, or you can email <a href='mailto:support@example.com'>support@example.com</a>.";
+  var CHIPS=["How much is it?","What can it connect to?","Can I export to CSV?","Is my data secure?"];
+
+  var $=function(s){return document.getElementById(s)};
+  var msgs=$("msgs"),form=$("form"),input=$("input"),chat=$("chat"),launcher=$("launcher"),chips=$("chips");
+  var opened=false;
+
+  function el(cls,html){var d=document.createElement("div");d.className=cls;if(html!=null)d.innerHTML=html;return d;}
+  function scroll(){msgs.scrollTop=msgs.scrollHeight;}
+  function addBot(html,src){
+    var m=el("msg bot",html);
+    if(src)m.appendChild(el("src","📄 Source: "+src));
+    msgs.appendChild(m);scroll();
+  }
+  function addUser(t){var m=el("msg user");m.textContent=t;msgs.appendChild(m);scroll();}
+
+  function answer(q){
+    var s=q.toLowerCase(),best=null,score=0;
+    KB.forEach(function(item){
+      var hits=item.k.reduce(function(n,kw){return n+(s.indexOf(kw)>=0?1:0);},0);
+      if(hits>score){score=hits;best=item;}
+    });
+    return best?{a:best.a,src:best.src}:{a:FALLBACK,src:null};
+  }
+
+  function botReply(q){
+    var t=el("typing","<span></span><span></span><span></span>");
+    msgs.appendChild(t);scroll();
+    var delay=500+Math.min(q.length*14,700);
+    setTimeout(function(){
+      t.remove();var r=answer(q);addBot(r.a,r.src);
+    },delay);
+  }
+
+  function renderChips(){
+    chips.innerHTML="";
+    CHIPS.forEach(function(c){
+      var b=document.createElement("button");b.type="button";b.textContent=c;
+      b.addEventListener("click",function(){send(c);});
+      chips.appendChild(b);
+    });
+  }
+  function send(text){
+    addUser(text);chips.innerHTML="";botReply(text);
+  }
+
+  form.addEventListener("submit",function(e){
+    e.preventDefault();var v=input.value.trim();if(!v)return;input.value="";send(v);
+  });
+
+  function open(){
+    opened=true;chat.classList.add("open");launcher.setAttribute("aria-expanded","true");
+    if(!msgs.childElementCount){setTimeout(function(){addBot(GREET);renderChips();},250);}
+    setTimeout(function(){input.focus();},260);
+  }
+  function close(){chat.classList.remove("open");launcher.setAttribute("aria-expanded","false");}
+  launcher.addEventListener("click",function(){opened&&chat.classList.contains("open")?close():open();});
+
+  // theme
+  $("thm").addEventListener("click",function(){
+    var r=document.documentElement,cur=r.getAttribute("data-theme");
+    if(!cur)cur=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";
+    r.setAttribute("data-theme",cur==="dark"?"light":"dark");
+  });
+})();
+</script>
+</body>
+</html>
