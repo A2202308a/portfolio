@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Async — AI integrations & automation for SaaS</title>
+<meta name="description" content="I build AI integrations and automations for SaaS teams and founders — support assistants, monitoring, workflow automation — and ship them in days.">
+<style>
+  :root{
+    --bg:#0C0D12; --surface:#14161F; --surface-2:#1B1E29;
+    --ink:#ECEEF6; --muted:#9498AE; --border:#262A38;
+    --accent:#5B57E0; --accent-2:#22C3A6; --accent-ink:#9C99FF;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 20px 50px rgba(0,0,0,.4);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg:#F7F8FC; --surface:#FFFFFF; --surface-2:#F0F1F7;
+    --ink:#171927; --muted:#5A5E76; --border:#E3E5F0;
+    --accent:#5B57E0; --accent-2:#0E9E85; --accent-ink:#4844C4;
+    --shadow:0 1px 2px rgba(23,25,39,.05),0 16px 40px rgba(23,25,39,.1);
+  }
+  @media (prefers-color-scheme:light){
+    :root:not([data-theme="dark"]){
+      --bg:#F7F8FC; --surface:#FFFFFF; --surface-2:#F0F1F7;
+      --ink:#171927; --muted:#5A5E76; --border:#E3E5F0;
+      --accent:#5B57E0; --accent-2:#0E9E85; --accent-ink:#4844C4;
+      --shadow:0 1px 2px rgba(23,25,39,.05),0 16px 40px rgba(23,25,39,.1);
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:clamp(28px,6vw,72px) clamp(18px,5vw,28px)}
+  a{color:inherit}
+
+  header.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:clamp(40px,8vw,72px)}
+  .logo{font-weight:800;letter-spacing:-.02em;font-size:17px}
+  .logo span{color:var(--accent-ink)}
+  .thm{background:transparent;border:1px solid var(--border);color:var(--ink);width:38px;height:38px;border-radius:10px;cursor:pointer;font-size:15px}
+
+  .hero{margin-bottom:clamp(44px,8vw,80px)}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--accent-ink);margin-bottom:20px}
+  .eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent-2);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent-2) 22%,transparent)}
+  h1{font-size:clamp(32px,6.5vw,56px);line-height:1.05;letter-spacing:-.03em;margin:0 0 20px;text-wrap:balance;font-weight:800}
+  h1 .g{background:linear-gradient(100deg,var(--accent-ink),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{font-size:clamp(16px,2.6vw,20px);color:var(--muted);max-width:60ch;margin:0 0 28px}
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px}
+  .btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:600;font-size:15px;padding:12px 20px;border-radius:11px;transition:.16s}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .btn.ghost{border:1px solid var(--border);color:var(--ink)}
+  .btn.ghost:hover{border-color:var(--accent)}
+
+  .lead{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:clamp(44px,8vw,72px)}
+  @media (max-width:640px){.lead{grid-template-columns:1fr}}
+  .lead .item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .lead .item .t{font-weight:700;font-size:15px;margin-bottom:5px}
+  .lead .item .d{font-size:13.5px;color:var(--muted)}
+
+  .sec-label{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;margin:0 0 20px}
+
+  .work{display:grid;gap:18px;margin-bottom:clamp(44px,8vw,72px)}
+  .proj{
+    display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:start;
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:clamp(20px,3.5vw,30px);box-shadow:var(--shadow);transition:.18s;
+  }
+  .proj:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--border))}
+  @media (max-width:600px){.proj{grid-template-columns:1fr}}
+  .proj .tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+  .proj .tag{font-size:11.5px;font-weight:600;color:var(--accent-ink);background:color-mix(in srgb,var(--accent) 12%,transparent);padding:4px 10px;border-radius:999px}
+  .proj h3{font-size:clamp(19px,3vw,23px);letter-spacing:-.02em;margin:0 0 8px}
+  .proj p{color:var(--muted);margin:0 0 14px;max-width:56ch;font-size:15px}
+  .proj .links{display:flex;gap:14px;font-size:14px;font-weight:600}
+  .proj .links a{color:var(--accent-ink);text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+  .proj .links a:hover{text-decoration:underline}
+  .proj .num{font-family:var(--mono);font-size:13px;color:var(--muted);text-align:right}
+  @media (max-width:600px){.proj .num{text-align:left}}
+
+  .contact{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,var(--surface)),var(--surface));border:1px solid var(--border);border-radius:18px;padding:clamp(24px,5vw,44px);text-align:center}
+  .contact h2{font-size:clamp(22px,4vw,30px);letter-spacing:-.02em;margin:0 0 10px;text-wrap:balance}
+  .contact p{color:var(--muted);max-width:46ch;margin:0 auto 22px}
+
+  footer{margin-top:48px;color:var(--muted);font-size:13px;text-align:center}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="nav">
+    <div class="logo">As<span>ync</span></div>
+    <button class="thm" id="thm" aria-label="Toggle theme">◐</button>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Available for freelance projects</div>
+    <h1>I build <span class="g">AI integrations & automation</span> for SaaS teams — and ship in days.</h1>
+    <p class="sub">Support assistants that answer from your docs. Monitors that watch pages and ping your Slack. Workflow automations that kill the manual work. Real, working software — not slideware — usually live within a week.</p>
+    <div class="cta-row">
+      <a class="btn primary" href="#work">See working demos ↓</a>
+      <a class="btn ghost" href="mailto:17625389909@163.com">Start a project</a>
+    </div>
+  </section>
+
+  <div class="lead">
+    <div class="item"><div class="t">Ships fast</div><div class="d">Scoped tight, milestone-based, most builds live in days not months.</div></div>
+    <div class="item"><div class="t">Provider-agnostic</div><div class="d">OpenAI, Anthropic, or a cheaper endpoint — your call, no lock-in.</div></div>
+    <div class="item"><div class="t">You can click it</div><div class="d">Every project below is a live, working demo. No mockups.</div></div>
+  </div>
+
+  <p class="sec-label" id="work">Selected work — live demos</p>
+  <div class="work">
+
+    <article class="proj">
+      <div>
+        <div class="tags"><span class="tag">AI integration</span><span class="tag">RAG</span><span class="tag">Widget</span></div>
+        <h3>AI Support Assistant</h3>
+        <p>A drop-in chat widget that answers customers from your own docs, cites its source, and hands off to a human when unsure. One script tag; runs on any LLM.</p>
+        <div class="links">
+          <a href="ai-support-widget/">▶ Live demo</a>
+          <a href="https://github.com/A2202308a/portfolio/tree/main/ai-support-widget">Code →</a>
+        </div>
+      </div>
+      <div class="num">01</div>
+    </article>
+
+    <article class="proj">
+      <div>
+        <div class="tags"><span class="tag">Automation</span><span class="tag">Monitoring</span><span class="tag">Slack</span></div>
+        <h3>AI Change Watcher</h3>
+        <p>Watches any web pages and tells you in plain English what actually changed — a price, a stock status, a policy — then pings Slack. Runs on a schedule.</p>
+        <div class="links">
+          <a href="https://github.com/A2202308a/portfolio/tree/main/ai-change-watcher">Code + run it →</a>
+        </div>
+      </div>
+      <div class="num">02</div>
+    </article>
+
+    <article class="proj">
+      <div>
+        <div class="tags"><span class="tag">Tool</span><span class="tag">Front-end</span></div>
+        <h3>LLM Cost Calculator</h3>
+        <p>A clean, client-side calculator that shows a team what they'd save switching LLM providers. Example of a fast, shippable marketing tool that ranks and earns links.</p>
+        <div class="links">
+          <a href="muse-spark-calculator/">▶ Live demo</a>
+        </div>
+      </div>
+      <div class="num">03</div>
+    </article>
+
+  </div>
+
+  <section class="contact">
+    <h2>Have something that needs building this week?</h2>
+    <p>Tell me the problem in a sentence. If I can ship it fast and well, I'll say so — and give you a fixed price and a date.</p>
+    <a class="btn primary" href="mailto:17625389909@163.com">Email me →</a>
+  </section>
+
+  <footer>© 2026 Async · AI integrations & automation · Remote, worldwide</footer>
+</div>
+<script>
+  document.getElementById("thm").addEventListener("click",function(){
+    var r=document.documentElement,cur=r.getAttribute("data-theme");
+    if(!cur)cur=matchMedia("(prefers-color-scheme:light)").matches?"light":"dark";
+    r.setAttribute("data-theme",cur==="dark"?"light":"dark");
+  });
+</script>
+</body>
+</html>
