@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Muse Spark Savings Calculator — cut your LLM API bill ~75%</title>
+<meta name="description" content="Estimate how much you'd save switching your app's LLM API from OpenAI or Anthropic to Meta's Muse Spark. Enter your monthly token usage and see the monthly and annual difference.">
+<style>
+  :root{
+    --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#EEF1F5;
+    --ink:#161A21; --muted:#5C6675; --border:#DFE4EA;
+    --accent:#FF6A1A; --accent-ink:#C24A00;
+    --pos:#0E9E63; --pos-ink:#0B7D4E; --pos-soft:#E4F6ED;
+    --shadow:0 1px 2px rgba(20,24,33,.04),0 8px 24px rgba(20,24,33,.06);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0E1116; --surface:#161B22; --surface-2:#1E252E;
+      --ink:#EAEEF3; --muted:#93A0B0; --border:#2A323C;
+      --accent:#FF7A2E; --accent-ink:#FF8A44;
+      --pos:#34D399; --pos-ink:#4ADE9A; --pos-soft:#10281F;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1116; --surface:#161B22; --surface-2:#1E252E;
+    --ink:#EAEEF3; --muted:#93A0B0; --border:#2A323C;
+    --accent:#FF7A2E; --accent-ink:#FF8A44;
+    --pos:#34D399; --pos-ink:#4ADE9A; --pos-soft:#10281F;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#EEF1F5;
+    --ink:#161A21; --muted:#5C6675; --border:#DFE4EA;
+    --accent:#FF6A1A; --accent-ink:#C24A00;
+    --pos:#0E9E63; --pos-ink:#0B7D4E; --pos-soft:#E4F6ED;
+    --shadow:0 1px 2px rgba(20,24,33,.04),0 8px 24px rgba(20,24,33,.06);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:clamp(20px,4vw,48px) clamp(16px,4vw,24px)}
+  a{color:var(--accent-ink)}
+
+  header.top{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:28px}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.01em}
+  .spark{width:22px; height:22px; flex:none}
+  .brand small{display:block; font-weight:500; color:var(--muted); font-size:12px; letter-spacing:.02em}
+  .toggle{
+    appearance:none; border:1px solid var(--border); background:var(--surface);
+    color:var(--ink); width:38px; height:38px; border-radius:10px; cursor:pointer;
+    font-size:16px; display:grid; place-items:center; transition:background .15s,border-color .15s;
+  }
+  .toggle:hover{border-color:var(--accent)}
+
+  h1{
+    font-size:clamp(26px,5vw,38px); line-height:1.1; letter-spacing:-.025em;
+    margin:0 0 10px; text-wrap:balance; font-weight:800;
+  }
+  .lede{color:var(--muted); font-size:clamp(15px,2.4vw,17px); margin:0 0 28px; max-width:60ch}
+
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+
+  /* verdict */
+  .verdict{padding:clamp(20px,4vw,32px); border-bottom:1px solid var(--border); text-align:center}
+  .verdict .eyebrow{
+    text-transform:uppercase; letter-spacing:.12em; font-size:11px; font-weight:700;
+    color:var(--muted); margin-bottom:10px;
+  }
+  .save-big{
+    font-family:var(--mono); font-variant-numeric:tabular-nums;
+    font-size:clamp(38px,9vw,64px); font-weight:700; line-height:1; color:var(--pos);
+    letter-spacing:-.02em;
+  }
+  .save-sub{margin-top:10px; font-family:var(--mono); font-size:clamp(14px,2.6vw,16px); color:var(--muted)}
+  .save-sub b{color:var(--ink); font-weight:600}
+
+  .body{padding:clamp(20px,4vw,32px); display:grid; gap:26px}
+
+  .field-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width:520px){.field-grid{grid-template-columns:1fr}}
+  label.f{display:block}
+  .f .lab{font-size:13px; font-weight:600; margin-bottom:6px; display:flex; justify-content:space-between; align-items:baseline}
+  .f .lab .hint{font-weight:400; color:var(--muted); font-size:12px}
+  .inputline{display:flex; align-items:stretch; border:1px solid var(--border); border-radius:10px; background:var(--surface-2); overflow:hidden}
+  .inputline:focus-within{border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+  .inputline input{
+    width:100%; border:0; background:transparent; color:var(--ink);
+    font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:16px;
+    padding:11px 12px; min-width:0;
+  }
+  .inputline input:focus{outline:none}
+  .inputline .unit{display:grid; place-items:center; padding:0 12px; color:var(--muted); font-size:12px; font-family:var(--mono); background:transparent; border-left:1px solid var(--border)}
+
+  .presets{display:flex; flex-wrap:wrap; gap:8px}
+  .presets button{
+    appearance:none; cursor:pointer; font:inherit; font-size:13px;
+    border:1px solid var(--border); background:var(--surface); color:var(--muted);
+    padding:6px 12px; border-radius:999px; transition:.15s;
+  }
+  .presets button:hover{border-color:var(--accent); color:var(--ink)}
+  .presets button[aria-pressed="true"]{border-color:var(--accent); color:var(--accent-ink); background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+
+  select.model{
+    appearance:none; width:100%; font:inherit; font-size:15px; color:var(--ink);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+    padding:11px 36px 11px 12px; cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 18px,calc(100% - 13px) 18px; background-size:5px 5px,5px 5px; background-repeat:no-repeat;
+  }
+  select.model:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+
+  .price-edit{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
+
+  /* comparison bars */
+  .compare{display:grid; gap:14px}
+  .bar-row{display:grid; grid-template-columns:120px 1fr auto; align-items:center; gap:12px}
+  @media (max-width:520px){.bar-row{grid-template-columns:88px 1fr auto; gap:8px}}
+  .bar-row .name{font-size:13px; font-weight:600; display:flex; align-items:center; gap:7px}
+  .dot{width:9px; height:9px; border-radius:50%; flex:none}
+  .track{height:30px; background:var(--surface-2); border-radius:8px; overflow:hidden; position:relative}
+  .fill{height:100%; border-radius:8px; width:0; transition:width .5s cubic-bezier(.22,.61,.36,1)}
+  .fill.cur{background:linear-gradient(90deg,var(--muted),color-mix(in srgb,var(--muted) 70%,var(--ink)))}
+  .fill.spk{background:linear-gradient(90deg,var(--accent),var(--accent-ink))}
+  .amt{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:14px; font-weight:600; white-space:nowrap; text-align:right}
+
+  .annual{
+    display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center;
+    background:var(--pos-soft); border:1px solid color-mix(in srgb,var(--pos) 30%,transparent);
+    border-radius:12px; padding:14px 16px;
+  }
+  .annual .k{font-size:13px; color:var(--pos-ink); font-weight:600}
+  .annual .v{font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:700; font-size:18px; color:var(--pos-ink)}
+
+  /* switch snippet */
+  .switch h2{font-size:15px; margin:0 0 10px; letter-spacing:-.01em}
+  pre{
+    margin:0; background:var(--surface-2); border:1px solid var(--border); border-radius:12px;
+    padding:16px; overflow-x:auto; font-family:var(--mono); font-size:13px; line-height:1.6;
+  }
+  pre .c{color:var(--muted)}
+  pre .k{color:var(--accent-ink)}
+  .cta{
+    display:inline-flex; align-items:center; gap:8px; margin-top:14px;
+    background:var(--accent); color:#fff; text-decoration:none; font-weight:600; font-size:14px;
+    padding:11px 18px; border-radius:10px; transition:.15s; border:1px solid transparent;
+  }
+  .cta:hover{filter:brightness(1.05); transform:translateY(-1px)}
+
+  /* reference table */
+  .ref{margin-top:26px}
+  .ref h2{font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin:0 0 12px}
+  .tbl{width:100%; border-collapse:collapse; font-size:14px}
+  .tbl th,.tbl td{padding:9px 10px; text-align:right; border-bottom:1px solid var(--border)}
+  .tbl th:first-child,.tbl td:first-child{text-align:left}
+  .tbl thead th{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600}
+  .tbl td{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  .tbl td:first-child{font-family:var(--sans)}
+  .tbl tr.spark td{color:var(--accent-ink); font-weight:600}
+  .tbl .badge{display:inline-block; font-family:var(--sans); font-size:11px; font-weight:700; color:#fff; background:var(--accent); padding:1px 7px; border-radius:999px; margin-left:8px; vertical-align:middle}
+
+  footer{margin-top:28px; color:var(--muted); font-size:12px; line-height:1.7}
+  footer a{color:var(--muted); text-decoration:underline}
+  footer .disc{margin-top:8px}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg class="spark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="var(--accent)"/>
+      </svg>
+      <div>Spark Savings<small>independent LLM cost calculator</small></div>
+    </div>
+    <button class="toggle" id="themeBtn" aria-label="Toggle light or dark theme">◐</button>
+  </header>
+
+  <h1>What would you save on Muse Spark?</h1>
+  <p class="lede">Meta's Muse Spark 1.1 API is OpenAI-compatible and priced at roughly a quarter of the current OpenAI and Anthropic flagships. Enter your monthly token usage to see the difference for your app.</p>
+
+  <div class="card">
+    <div class="verdict">
+      <div class="eyebrow">Estimated monthly saving</div>
+      <div class="save-big" id="saveBig">—</div>
+      <div class="save-sub" id="saveSub">vs your current provider</div>
+    </div>
+
+    <div class="body">
+      <div>
+        <div class="f" style="margin-bottom:14px">
+          <div class="lab"><span>Monthly usage</span><span class="hint">pick a preset or type your own</span></div>
+          <div class="presets" id="presets">
+            <button data-in="5" data-out="2">Side project</button>
+            <button data-in="100" data-out="40" aria-pressed="true">Growing app</button>
+            <button data-in="1000" data-out="400">At scale</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label class="f">
+            <span class="lab"><span>Input tokens / month</span></span>
+            <span class="inputline"><input id="inTok" type="number" min="0" step="1" value="100" inputmode="decimal"><span class="unit">M tok</span></span>
+          </label>
+          <label class="f">
+            <span class="lab"><span>Output tokens / month</span></span>
+            <span class="inputline"><input id="outTok" type="number" min="0" step="1" value="40" inputmode="decimal"><span class="unit">M tok</span></span>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label class="f">
+          <span class="lab"><span>Your current model</span><span class="hint">prices are editable</span></span>
+          <select class="model" id="modelSel"></select>
+        </label>
+        <div class="price-edit">
+          <label class="f">
+            <span class="lab"><span>Input price</span></span>
+            <span class="inputline"><input id="inPrice" type="number" min="0" step="0.01" value="5.00" inputmode="decimal"><span class="unit">$/M</span></span>
+          </label>
+          <label class="f">
+            <span class="lab"><span>Output price</span></span>
+            <span class="inputline"><input id="outPrice" type="number" min="0" step="0.01" value="25.00" inputmode="decimal"><span class="unit">$/M</span></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="compare">
+        <div class="bar-row">
+          <div class="name"><span class="dot" style="background:var(--muted)"></span><span id="curName">Current</span></div>
+          <div class="track"><div class="fill cur" id="curFill"></div></div>
+          <div class="amt" id="curAmt">$0</div>
+        </div>
+        <div class="bar-row">
+          <div class="name"><span class="dot" style="background:var(--accent)"></span>Muse Spark</div>
+          <div class="track"><div class="fill spk" id="spkFill"></div></div>
+          <div class="amt" id="spkAmt">$0</div>
+        </div>
+      </div>
+
+      <div class="annual">
+        <span class="k">Annualized saving</span>
+        <span class="v" id="annual">$0 / yr</span>
+      </div>
+
+      <div class="switch">
+        <h2>Switching is one line</h2>
+        <pre><span class="c">// Muse Spark speaks the OpenAI protocol — point the SDK at Meta's endpoint</span>
+<span class="k">import</span> OpenAI <span class="k">from</span> <span class="c">"openai"</span>;
+<span class="k">const</span> client = <span class="k">new</span> OpenAI({
+  baseURL: <span class="c">"https://api.meta.ai/v1"</span>,   <span class="c">// ← only change</span>
+  apiKey: process.env.META_API_KEY,      <span class="c">// ← plus your key</span>
+});
+<span class="c">// every other line of your OpenAI code stays the same</span></pre>
+        <a class="cta" id="starterLink" href="#">See more of my work →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="ref">
+    <h2>Reference prices <span style="text-transform:none;letter-spacing:0;font-weight:400">— per 1M tokens, as of 2026-07-13</span></h2>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>Model</th><th>Input</th><th>Output</th><th>vs Muse Spark</th></tr></thead>
+        <tbody id="refBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    Prices are compiled from official pricing pages and public reporting on 2026-07-13 and can change at any time — confirm current rates before you rely on a number. GPT-5.5 output pricing in particular varies by source; the calculator lets you type your own.
+    <div class="disc">Independent tool. Not affiliated with, endorsed by, or operated by Meta, OpenAI, or Anthropic. Muse Spark, GPT, and Claude are trademarks of their respective owners. Estimates only — token accounting in production will differ.</div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  // Verified 2026-07-13. Muse Spark: Meta Model API public preview. Opus 4.8: Anthropic.
+  // GPT-5.5: OpenAI (output price varies by source; using a mid figure — user-editable).
+  var SPARK = {in:1.25, out:4.25};
+  var MODELS = [
+    {id:"opus48",  name:"Claude Opus 4.8",   in:5.00,  out:25.00},
+    {id:"gpt55",   name:"GPT-5.5",           in:5.00,  out:30.00},
+    {id:"sonnet",  name:"Claude Sonnet 4.6", in:3.00,  out:15.00},
+    {id:"custom",  name:"Custom / other",    in:5.00,  out:25.00}
+  ];
+
+  var $=function(id){return document.getElementById(id)};
+  var inTok=$("inTok"), outTok=$("outTok"), inPrice=$("inPrice"), outPrice=$("outPrice"),
+      modelSel=$("modelSel");
+
+  MODELS.forEach(function(m){
+    var o=document.createElement("option"); o.value=m.id; o.textContent=m.name; modelSel.appendChild(o);
+  });
+
+  function money(n){
+    if(!isFinite(n)) n=0;
+    if(n>=1000) return "$"+Math.round(n).toLocaleString("en-US");
+    if(n>=100)  return "$"+n.toFixed(0);
+    return "$"+n.toFixed(2);
+  }
+  function num(el){var v=parseFloat(el.value); return isFinite(v)&&v>0?v:0;}
+
+  function cost(p){ return num(inTok)*p.in + num(outTok)*p.out; }
+
+  function recompute(){
+    var cur={in:num(inPrice), out:num(outPrice)};
+    var curCost=cost(cur), spkCost=cost(SPARK);
+    var saved=curCost-spkCost, pct=curCost>0?(saved/curCost*100):0;
+
+    $("saveBig").textContent = saved>0 ? money(saved)+" /mo" : money(0)+" /mo";
+    $("saveSub").innerHTML = curCost>0
+      ? "that's <b>"+(pct>0?pct.toFixed(0):0)+"%</b> off your current bill of <b>"+money(curCost)+"/mo</b>"
+      : "enter your usage and current prices above";
+    $("curAmt").textContent=money(curCost)+" /mo";
+    $("spkAmt").textContent=money(spkCost)+" /mo";
+    var max=Math.max(curCost,spkCost,1);
+    $("curFill").style.width=(curCost/max*100)+"%";
+    $("spkFill").style.width=(spkCost/max*100)+"%";
+    $("annual").textContent=money(Math.max(saved,0)*12)+" / yr";
+    $("curName").textContent=MODELS.find(function(m){return m.id===modelSel.value;}).name.split(" ").slice(0,2).join(" ");
+  }
+
+  function applyModel(){
+    var m=MODELS.find(function(x){return x.id===modelSel.value;});
+    if(m.id!=="custom"){ inPrice.value=m.in.toFixed(2); outPrice.value=m.out.toFixed(2); }
+    recompute();
+  }
+
+  // reference table
+  var refBody=$("refBody");
+  function refRow(name,pin,pout,isSpark){
+    var mult=(pout/SPARK.out);
+    var tr=document.createElement("tr"); if(isSpark) tr.className="spark";
+    tr.innerHTML="<td>"+name+(isSpark?'<span class="badge">cheapest</span>':"")+"</td><td>$"+pin.toFixed(2)+"</td><td>$"+pout.toFixed(2)+"</td><td>"+(isSpark?"—":mult.toFixed(1)+"× on output")+"</td>";
+    refBody.appendChild(tr);
+  }
+  refRow("Muse Spark 1.1",SPARK.in,SPARK.out,true);
+  MODELS.filter(function(m){return m.id!=="custom";}).forEach(function(m){refRow(m.name,m.in,m.out,false);});
+
+  // presets
+  var presetBtns=Array.prototype.slice.call(document.querySelectorAll("#presets button"));
+  presetBtns.forEach(function(b){
+    b.addEventListener("click",function(){
+      inTok.value=b.dataset.in; outTok.value=b.dataset.out;
+      presetBtns.forEach(function(x){x.setAttribute("aria-pressed","false");});
+      b.setAttribute("aria-pressed","true");
+      recompute();
+    });
+  });
+  function clearPresets(){presetBtns.forEach(function(x){x.setAttribute("aria-pressed","false");});}
+  [inTok,outTok].forEach(function(el){el.addEventListener("input",function(){clearPresets();recompute();});});
+  [inPrice,outPrice].forEach(function(el){el.addEventListener("input",recompute);});
+  modelSel.addEventListener("change",applyModel);
+
+  // theme toggle
+  var root=document.documentElement, tb=$("themeBtn");
+  tb.addEventListener("click",function(){
+    var cur=root.getAttribute("data-theme");
+    if(!cur){ cur = matchMedia("(prefers-color-scheme:dark)").matches ? "dark":"light"; }
+    root.setAttribute("data-theme", cur==="dark"?"light":"dark");
+  });
+
+  // starter link — replace # with your repo URL after you push it
+  $("starterLink").setAttribute("href","../");
+
+  applyModel();
+})();
+</script>
+</body>
+</html>
